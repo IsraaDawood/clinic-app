@@ -1,56 +1,59 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>برنامج متابعة المرضى/ د.إسراء داود</title>
+  <meta charset="UTF-8" />
+  <title>نظام متابعة المرضى</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-image: url('خلفيه الموقع.jpg');
+      background-image: url('خلفية_الموقع.jpg');
       background-size: cover;
       background-position: center;
       margin: 0;
-      padding: 40px;
-      text-align: center;
-      color: #4b2e1e;
+      padding: 20px;
       direction: rtl;
+      color: #4b2e1e;
     }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 600px;
+      margin: auto;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
     h1 {
-      font-size: 26px;
       margin-bottom: 30px;
     }
-    .button-container {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      align-items: center;
-      justify-content: center;
-    }
-    a {
+
+    .btn {
       display: block;
-      width: 250px;
+      width: 100%;
       padding: 15px;
-      background-color: #8c6239;
+      margin: 15px 0;
+      background-color: #a67c52;
       color: white;
-      text-decoration: none;
-      border-radius: 8px;
+      border: none;
+      border-radius: 12px;
       font-size: 18px;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      transition: background 0.3s;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    a:hover {
-      background-color: #754c2b;
+
+    .btn:hover {
+      background-color: #8a6242;
     }
   </style>
 </head>
 <body>
-  <h1>📋 برنامج متابعة المرضى<br>د. إسراء داود</h1>
-  <div class="button-container">
-    <a href="search.html">🔍 بحث عن مريض</a>
-    <a href="add-patient_FIXED.html">➕ إدخال مريض جديد</a>
-    <a href="followup_FIXED.html">📆 متابعة مريض سابق</a>
+  <div class="container">
+    <h1>نظام متابعة حالات المرضى</h1>
+    <button class="btn" onclick="location.href='search.html'">🔍 البحث عن مريض</button>
+    <button class="btn" onclick="location.href='add-patient.html'">➕ إدخال مريض جديد</button>
+    <button class="btn" onclick="location.href='followup.html'">📋 متابعة مريض سابق</button>
   </div>
 </body>
 </html>
