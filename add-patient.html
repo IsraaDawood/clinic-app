@@ -1,1 +1,132 @@
-<!DOCTYPE html><html><body><h1>إدخال مريض جديد</h1></body></html>
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدخال مريض جديد</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('خلفيه الموقع.jpg');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+      color: #4b2e1e;
+    }
+    .overlay {
+      background-color: rgba(255,255,255,0.9);
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #a67c52;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #875f3b;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h2>➕ إدخال مريض جديد</h2>
+    <input type="text" id="full_name" placeholder="الاسم الكامل">
+    <input type="date" id="birth_date" placeholder="تاريخ الميلاد" onchange="calculateAge()">
+    <input type="number" id="age" placeholder="العمر" readonly>
+    <input type="text" id="phone" placeholder="رقم الهاتف">
+    <textarea id="notes" placeholder="ملاحظات"></textarea>
+    <select id="treatment" onchange="handleTreatment()">
+      <option value="">اختر الحالة العلاجية</option>
+      <option>ازالة الشعر بالليزر</option>
+      <option>ليزر co2</option>
+      <option>تنظيف وجه عادي</option>
+      <option>تنظيف هيدرافاشيال</option>
+      <option>علاج شعر مخصص</option>
+      <option>زراعة شعر</option>
+      <option>تنحيف واذابة الدهون</option>
+      <option>علاج الوجه</option>
+    </select>
+    <div id="faceOptions" class="hidden">
+      <select id="face_subtype">
+        <option value="">اختر نوع علاج الوجه</option>
+        <option>ميكرونيدليغ</option>
+        <option>ميزوتيرابي</option>
+        <option>فيلر</option>
+        <option>بوتوكس</option>
+        <option>محفزات الكولاجين</option>
+      </select>
+    </div>
+    <input type="date" id="start_date" placeholder="تاريخ بدء العلاج">
+    <label>📷 صورة قبل العلاج:</label>
+    <input type="file" id="before_image">
+    <button onclick="savePatient()">📥 حفظ</button>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const supabase = supabase.createClient(
+      'https://hwghfovrylwyqbhfxufw.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Z2hmb3ZyeWx3eXFiaGZ4dWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwOTIyNTEsImV4cCI6MjA2NTY2ODI1MX0.Fm6HwcGMg1orsFT7LJELZZdM7CiKr0wnv1Be3CYkQU0'
+    );
+
+    function calculateAge() {
+      const birthDate = new Date(document.getElementById('birth_date').value);
+      const age = new Date().getFullYear() - birthDate.getFullYear();
+      document.getElementById('age').value = age;
+    }
+
+    function handleTreatment() {
+      const treatment = document.getElementById('treatment').value;
+      document.getElementById('faceOptions').classList.toggle('hidden', treatment !== 'علاج الوجه');
+    }
+
+    async function savePatient() {
+      const file = document.getElementById('before_image').files[0];
+      let before_image_url = null;
+
+      if (file) {
+        const fileName = Date.now() + "_" + file.name;
+        const { error: uploadError } = await supabase.storage
+          .from('patients-images')
+          .upload(fileName, file);
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage.from('patients-images').getPublicUrl(fileName);
+          before_image_url = urlData.publicUrl;
+        }
+      }
+
+      const patient = {
+        full_name: document.getElementById('full_name').value,
+        birth_date: document.getElementById('birth_date').value,
+        age: document.getElementById('age').value,
+        phone: document.getElementById('phone').value,
+        notes: document.getElementById('notes').value,
+        treatment: document.getElementById('treatment').value,
+        face_subtype: document.getElementById('face_subtype').value,
+        start_date: document.getElementById('start_date').value,
+        before_image_url
+      };
+
+      const { error } = await supabase.from('patients').insert([patient]);
+      document.getElementById('status').textContent = error ? '❌ فشل الحفظ' : '✅ تم الحفظ بنجاح';
+    }
+  </script>
+</body>
+</html>
