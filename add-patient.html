@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>إدخال مريض جديد</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('خلفيه الموقع.jpg');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+      color: #4b2e1e;
+    }
+    .form-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 0 10px #ccc;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #8c6239;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>➕ إدخال مريض جديد</h2>
+    <input type="text" id="name" placeholder="الاسم">
+    <input type="date" id="birthDate" placeholder="تاريخ الميلاد">
+    <input type="number" id="age" placeholder="العمر">
+    <input type="text" id="phone" placeholder="رقم الهاتف">
+    <textarea id="notes" placeholder="ملاحظات"></textarea>
+    <select id="treatment">
+      <option>إختر نوع العلاج</option>
+      <option>إزالة الشعر بالليزر</option>
+      <option>ليزر co2</option>
+      <option>تنظيف وجه عادي</option>
+      <option>تنظيف هيدرافاشيال</option>
+      <option>علاج شعر مخصص</option>
+      <option>زراعة شعر</option>
+      <option>تنحيف واذابة الدهون</option>
+      <option>علاج الوجه</option>
+    </select>
+    <select id="faceSubtype" style="display:none;">
+      <option>ميكرونيدليغ</option>
+      <option>ميزوتيرابي</option>
+      <option>فيلر</option>
+      <option>بوتوكس</option>
+      <option>محفزات الكولاجين</option>
+    </select>
+    <input type="date" id="startDate" placeholder="تاريخ البدء بالعلاج">
+    <label>📷 صورة قبل العلاج:</label>
+    <input type="file" id="beforeImage">
+    <button onclick="savePatient()">📥 حفظ</button>
+  </div>
+
+  <script>
+    const supabase = supabase.createClient("https://hwghfovrylwyqbhfxufw.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Z2hmb3ZyeWx3eXFiaGZ4dWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwOTIyNTEsImV4cCI6MjA2NTY2ODI1MX0.Fm6HwcGMg1orsFT7LJELZZdM7CiKr0wnv1Be3CYkQU0");
+
+    document.getElementById("treatment").addEventListener("change", function() {
+      const faceSubtype = document.getElementById("faceSubtype");
+      faceSubtype.style.display = this.value === "علاج الوجه" ? "block" : "none";
+    });
+
+    async function savePatient() {
+      const name = document.getElementById("name").value;
+      const birthDate = document.getElementById("birthDate").value;
+      const age = parseInt(document.getElementById("age").value);
+      const phone = document.getElementById("phone").value;
+      const notes = document.getElementById("notes").value;
+      const treatment = document.getElementById("treatment").value;
+      const faceSubtype = document.getElementById("faceSubtype").value || "";
+      const startDate = document.getElementById("startDate").value;
+      const imageFile = document.getElementById("beforeImage").files[0];
+
+      let imageUrl = "";
+      if (imageFile) {
+        const fileName = `${Date.now()}_${imageFile.name}`;
+        const { data, error } = await supabase.storage.from("patients-images").upload(fileName, imageFile);
+        if (error) return alert("❌ فشل رفع الصورة: " + error.message);
+        imageUrl = supabase.storage.from("patients-images").getPublicUrl(fileName).data.publicUrl;
+      }
+
+      const { error: insertError } = await supabase.from("patients").insert([{
+        full_name: name,
+        birth_date: birthDate,
+        age,
+        phone,
+        notes,
+        treatment,
+        face_subtype: treatment === "علاج الوجه" ? faceSubtype : "",
+        start_date: startDate,
+        before_image_url: imageUrl,
+        created_at: new Date().toISOString()
+      }]);
+
+      if (insertError) {
+        alert("❌ فشل الحفظ: " + insertError.message);
+      } else {
+        alert("✅ تم الحفظ بنجاح");
+      }
+    }
+  </script>
+</body>
+</html>

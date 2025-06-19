@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>متابعة مريض سابق</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-image: url('خلفيه الموقع.jpg');
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+      color: #4b2e1e;
+    }
+    .form-container {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px #ccc;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #8c6239;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .session {
+      border-top: 1px solid #ccc;
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>🔍 متابعة مريض سابق</h2>
+    <input type="text" id="searchName" placeholder="ادخل اسم المريض">
+    <button onclick="searchPatient()">🔎 بحث</button>
+    <div id="patientDetails" style="display:none;">
+      <h3>📋 تفاصيل المريض</h3>
+      <div id="patientInfo"></div>
+      <div class="session">
+        <h4>➕ إضافة جلسة جديدة</h4>
+        <input type="date" id="sessionDate" placeholder="تاريخ الجلسة">
+        <textarea id="doctorNotes" placeholder="ملاحظات الطبيب"></textarea>
+        <label>📷 صورة بعد الجلسة:</label>
+        <input type="file" id="afterImage">
+        <button onclick="addSession()">💾 حفظ الجلسة</button>
+      </div>
+      <div id="sessionList"></div>
+    </div>
+  </div>
+
+  <script>
+    const supabase = supabase.createClient("https://hwghfovrylwyqbhfxufw.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3Z2hmb3ZyeWx3eXFiaGZ4dWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwOTIyNTEsImV4cCI6MjA2NTY2ODI1MX0.Fm6HwcGMg1orsFT7LJELZZdM7CiKr0wnv1Be3CYkQU0");
+    let currentPatientId = null;
+
+    async function searchPatient() {
+      const name = document.getElementById("searchName").value;
+      const { data, error } = await supabase
+        .from("patients")
+        .select("*")
+        .ilike("full_name", `%${name}%`);
+
+      if (error || !data.length) {
+        alert("❌ لم يتم العثور على المريض");
+        return;
+      }
+
+      const patient = data[0];
+      currentPatientId = patient.id;
+      document.getElementById("patientDetails").style.display = "block";
+      document.getElementById("patientInfo").innerHTML = `
+        <p><strong>الاسم:</strong> ${patient.full_name}</p>
+        <p><strong>تاريخ الميلاد:</strong> ${patient.birth_date}</p>
+        <p><strong>العمر:</strong> ${patient.age}</p>
+        <p><strong>الهاتف:</strong> ${patient.phone}</p>
+        <p><strong>ملاحظات:</strong> ${patient.notes}</p>
+        <p><strong>العلاج:</strong> ${patient.treatment} - ${patient.face_subtype || ''}</p>
+        <p><strong>تاريخ بدء العلاج:</strong> ${patient.start_date}</p>
+        <p><strong>📷 قبل العلاج:</strong><br><img src="${patient.before_image_url}" width="200"/></p>
+      `;
+
+      loadSessions(patient.id);
+    }
+
+    async function loadSessions(patientId) {
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("patient_id", patientId)
+        .order("session_date", { ascending: false });
+
+      if (error) return alert("❌ خطأ في تحميل الجلسات");
+
+      const list = document.getElementById("sessionList");
+      list.innerHTML = "<h4>📚 الجلسات السابقة:</h4>" + data.map(sess => `
+        <div style="border-bottom:1px solid #ccc; margin-bottom:10px;">
+          <p><strong>📅 التاريخ:</strong> ${sess.session_date}</p>
+          <p><strong>📝 الملاحظات:</strong> ${sess.doctor_notes}</p>
+          <p><strong>📷 بعد الجلسة:</strong><br><img src="${sess.after_image_url}" width="200"/></p>
+        </div>
+      `).join("");
+    }
+
+    async function addSession() {
+      if (!currentPatientId) return;
+
+      const sessionDate = document.getElementById("sessionDate").value;
+      const doctorNotes = document.getElementById("doctorNotes").value;
+      const imageFile = document.getElementById("afterImage").files[0];
+
+      let imageUrl = "";
+      if (imageFile) {
+        const fileName = `${Date.now()}_${imageFile.name}`;
+        const { error } = await supabase.storage.from("patients-images").upload(fileName, imageFile);
+        if (error) return alert("❌ فشل رفع صورة الجلسة");
+        imageUrl = supabase.storage.from("patients-images").getPublicUrl(fileName).data.publicUrl;
+      }
+
+      const { error: insertError } = await supabase.from("sessions").insert([{
+        patient_id: currentPatientId,
+        session_date: sessionDate,
+        doctor_notes: doctorNotes,
+        after_image_url: imageUrl,
+        created_at: new Date().toISOString()
+      }]);
+
+      if (insertError) {
+        alert("❌ فشل الحفظ: " + insertError.message);
+      } else {
+        alert("✅ تم حفظ الجلسة");
+        loadSessions(currentPatientId);
+        document.getElementById("sessionDate").value = "";
+        document.getElementById("doctorNotes").value = "";
+        document.getElementById("afterImage").value = "";
+      }
+    }
+  </script>
+</body>
+</html>
